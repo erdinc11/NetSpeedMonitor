@@ -11,6 +11,9 @@ mkdir -p "$APP_BUNDLE/Contents/MacOS"
 mkdir -p "$APP_BUNDLE/Contents/Resources"
 
 cp "$DIR/Resources/Info.plist" "$APP_BUNDLE/Contents/"
+if [ -f "$DIR/Resources/AppIcon.icns" ]; then
+    cp "$DIR/Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/"
+fi
 
 TMP_ARM64="/tmp/${APP_NAME}_arm64"
 TMP_X86="/tmp/${APP_NAME}_x86"
@@ -52,14 +55,34 @@ elif [ "$1" == "--run" ]; then
     open "$APP_BUNDLE"
 elif [ "$1" == "--dmg" ]; then
     DMG_NAME="${APP_NAME}-v1.0.0.dmg"
-    echo "💿 Creating DMG: $BUILD_DIR/$DMG_NAME..."
+    echo "💿 Creating styled DMG: $BUILD_DIR/$DMG_NAME..."
+    
+    if [ ! -f "$DIR/Resources/dmg_background.png" ]; then
+        swift "$DIR/scripts/generate_dmg_background.swift" "$DIR/Resources/dmg_background.png"
+    fi
+    
     STAGING_DIR="/tmp/${APP_NAME}_dmg_staging"
     rm -rf "$STAGING_DIR"
     mkdir -p "$STAGING_DIR"
     cp -R "$APP_BUNDLE" "$STAGING_DIR/"
-    ln -s /Applications "$STAGING_DIR/Applications"
+    
     rm -f "$BUILD_DIR/$DMG_NAME"
-    hdiutil create -volname "$APP_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$BUILD_DIR/$DMG_NAME"
+    create-dmg \
+        --volname "$APP_NAME" \
+        --volicon "$DIR/Resources/AppIcon.icns" \
+        --background "$DIR/Resources/dmg_background.png" \
+        --window-pos 200 120 \
+        --window-size 540 380 \
+        --icon-size 128 \
+        --text-size 12 \
+        --icon "$APP_NAME.app" 130 190 \
+        --hide-extension "$APP_NAME.app" \
+        --app-drop-link 410 190 \
+        --no-internet-enable \
+        --overwrite \
+        "$BUILD_DIR/$DMG_NAME" \
+        "$STAGING_DIR" || true
+        
     rm -rf "$STAGING_DIR"
     echo "🎉 DMG successfully created: $BUILD_DIR/$DMG_NAME"
 fi
