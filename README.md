@@ -80,7 +80,14 @@ When clicked or right-clicked:
 
 ## 🚀 Installation & Quick Start
 
-### Option 1: Install directly to `/Applications` (Recommended)
+### Option 1: Download Pre-built DMG (Fastest)
+
+1. Download **[`NetSpeedMonitor-v1.0.0.dmg`](https://github.com/erdinc11/NetSpeedMonitor/releases/latest/download/NetSpeedMonitor-v1.0.0.dmg)** from [Releases](https://github.com/erdinc11/NetSpeedMonitor/releases).
+2. Double-click to open the `.dmg` file.
+3. Drag and drop **`NetSpeedMonitor.app`** into the **Applications** folder shortcut.
+4. Launch **NetSpeedMonitor** from your Applications!
+
+### Option 2: Build and Install from Source
 
 Clone the repository and run the build script with `--install`:
 
@@ -90,14 +97,10 @@ cd NetSpeedMonitor
 ./build.sh --install
 ```
 
-This compiles the native `.app` bundle, places it in `/Applications/NetSpeedMonitor.app`, and launches it immediately.
-
-### Option 2: Build and run locally
+To generate a standalone DMG locally:
 
 ```bash
-git clone https://github.com/erdinc11/NetSpeedMonitor.git
-cd NetSpeedMonitor
-./build.sh --run
+./build.sh --dmg
 ```
 
 ---

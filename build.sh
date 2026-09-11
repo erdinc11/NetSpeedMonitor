@@ -50,4 +50,16 @@ elif [ "$1" == "--run" ]; then
     pkill -x "$APP_NAME" 2>/dev/null || true
     sleep 0.5
     open "$APP_BUNDLE"
+elif [ "$1" == "--dmg" ]; then
+    DMG_NAME="${APP_NAME}-v1.0.0.dmg"
+    echo "💿 Creating DMG: $BUILD_DIR/$DMG_NAME..."
+    STAGING_DIR="/tmp/${APP_NAME}_dmg_staging"
+    rm -rf "$STAGING_DIR"
+    mkdir -p "$STAGING_DIR"
+    cp -R "$APP_BUNDLE" "$STAGING_DIR/"
+    ln -s /Applications "$STAGING_DIR/Applications"
+    rm -f "$BUILD_DIR/$DMG_NAME"
+    hdiutil create -volname "$APP_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$BUILD_DIR/$DMG_NAME"
+    rm -rf "$STAGING_DIR"
+    echo "🎉 DMG successfully created: $BUILD_DIR/$DMG_NAME"
 fi
