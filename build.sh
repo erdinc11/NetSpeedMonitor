@@ -75,9 +75,9 @@ elif [ "$1" == "--dmg" ]; then
         --window-size 540 380 \
         --icon-size 128 \
         --text-size 12 \
-        --icon "$APP_NAME.app" 130 190 \
+        --icon "$APP_NAME.app" 140 200 \
         --hide-extension "$APP_NAME.app" \
-        --app-drop-link 410 190 \
+        --app-drop-link 400 200 \
         --no-internet-enable \
         --overwrite \
         "$BUILD_DIR/$DMG_NAME" \
