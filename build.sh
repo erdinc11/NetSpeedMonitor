@@ -6,18 +6,33 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 BUILD_DIR="$DIR/build"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 
-echo "🚀 Building NetSpeedMonitor..."
+echo "🚀 Building NetSpeedMonitor (Universal Binary: Apple Silicon + Intel)..."
 mkdir -p "$APP_BUNDLE/Contents/MacOS"
 mkdir -p "$APP_BUNDLE/Contents/Resources"
 
 cp "$DIR/Resources/Info.plist" "$APP_BUNDLE/Contents/"
 
+TMP_ARM64="/tmp/${APP_NAME}_arm64"
+TMP_X86="/tmp/${APP_NAME}_x86"
+
 swiftc "$DIR/Sources/NetworkMonitor.swift" \
        "$DIR/Sources/StatusBarView.swift" \
        "$DIR/Sources/AppDelegate.swift" \
        "$DIR/Sources/main.swift" \
-       -o "$APP_BUNDLE/Contents/MacOS/$APP_NAME" \
+       -target arm64-apple-macosx12.0 \
+       -o "$TMP_ARM64" \
        -O
+
+swiftc "$DIR/Sources/NetworkMonitor.swift" \
+       "$DIR/Sources/StatusBarView.swift" \
+       "$DIR/Sources/AppDelegate.swift" \
+       "$DIR/Sources/main.swift" \
+       -target x86_64-apple-macosx12.0 \
+       -o "$TMP_X86" \
+       -O
+
+lipo -create "$TMP_ARM64" "$TMP_X86" -output "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+rm -f "$TMP_ARM64" "$TMP_X86"
 
 echo "✅ Build successful: $APP_BUNDLE"
 
