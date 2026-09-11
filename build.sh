@@ -6,7 +6,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 BUILD_DIR="$DIR/build"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 
-echo "🚀 NetSpeedMonitor derleniyor..."
+echo "🚀 Building NetSpeedMonitor..."
 mkdir -p "$APP_BUNDLE/Contents/MacOS"
 mkdir -p "$APP_BUNDLE/Contents/Resources"
 
@@ -19,19 +19,19 @@ swiftc "$DIR/Sources/NetworkMonitor.swift" \
        -o "$APP_BUNDLE/Contents/MacOS/$APP_NAME" \
        -O
 
-echo "✅ Derleme başarılı: $APP_BUNDLE"
+echo "✅ Build successful: $APP_BUNDLE"
 
 if [ "$1" == "--install" ]; then
-    echo "📦 /Applications dizinine yükleniyor..."
+    echo "📦 Installing to /Applications..."
     pkill -x "$APP_NAME" 2>/dev/null || true
     sleep 0.5
     rm -rf "/Applications/$APP_NAME.app"
     cp -R "$APP_BUNDLE" /Applications/
-    echo "🎉 /Applications/$APP_NAME.app yüklendi."
-    echo "▶️ Uygulama başlatılıyor..."
+    echo "🎉 Installed to /Applications/$APP_NAME.app"
+    echo "▶️ Launching application..."
     open "/Applications/$APP_NAME.app"
 elif [ "$1" == "--run" ]; then
-    echo "▶️ Uygulama başlatılıyor..."
+    echo "▶️ Launching application..."
     pkill -x "$APP_NAME" 2>/dev/null || true
     sleep 0.5
     open "$APP_BUNDLE"

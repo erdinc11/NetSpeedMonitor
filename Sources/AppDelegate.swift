@@ -63,44 +63,44 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(NSMenuItem.separator())
         
         // Detailed speeds
-        downloadDetailItem = NSMenuItem(title: "⬇️ İndirme: 0.00 MB/s", action: nil, keyEquivalent: "")
+        downloadDetailItem = NSMenuItem(title: "⬇️ Download Speed: 0.00 MB/s", action: nil, keyEquivalent: "")
         downloadDetailItem.isEnabled = false
         menu.addItem(downloadDetailItem)
         
-        uploadDetailItem = NSMenuItem(title: "⬆️ Yükleme: 0.00 MB/s", action: nil, keyEquivalent: "")
+        uploadDetailItem = NSMenuItem(title: "⬆️ Upload Speed: 0.00 MB/s", action: nil, keyEquivalent: "")
         uploadDetailItem.isEnabled = false
         menu.addItem(uploadDetailItem)
         
         menu.addItem(NSMenuItem.separator())
         
         // Session totals
-        totalDownloadItem = NSMenuItem(title: "📥 Toplam İndirilen: 0 MB", action: nil, keyEquivalent: "")
+        totalDownloadItem = NSMenuItem(title: "📥 Total Downloaded: 0 MB", action: nil, keyEquivalent: "")
         totalDownloadItem.isEnabled = false
         menu.addItem(totalDownloadItem)
         
-        totalUploadItem = NSMenuItem(title: "📤 Toplam Yüklenen: 0 MB", action: nil, keyEquivalent: "")
+        totalUploadItem = NSMenuItem(title: "📤 Total Uploaded: 0 MB", action: nil, keyEquivalent: "")
         totalUploadItem.isEnabled = false
         menu.addItem(totalUploadItem)
         
         menu.addItem(NSMenuItem.separator())
         
         // Network interface information
-        interfaceItem = NSMenuItem(title: "🌐 Ağ: Bekleniyor...", action: nil, keyEquivalent: "")
+        interfaceItem = NSMenuItem(title: "🌐 Interface: Waiting...", action: nil, keyEquivalent: "")
         interfaceItem.isEnabled = false
         menu.addItem(interfaceItem)
         
         menu.addItem(NSMenuItem.separator())
         
         // Arrow style selector
-        arrowStyleSubmenuItem = NSMenuItem(title: "Ok Stili (Tray İkon)", action: nil, keyEquivalent: "")
+        arrowStyleSubmenuItem = NSMenuItem(title: "Arrow Style (Tray Icon)", action: nil, keyEquivalent: "")
         let arrowMenu = NSMenu()
         arrowMenu.autoenablesItems = false
         
-        arrowClassicItem = NSMenuItem(title: "↑ ↓ Klasik Ok", action: #selector(setArrowStyleClassic), keyEquivalent: "")
+        arrowClassicItem = NSMenuItem(title: "↑ ↓ Classic Arrows", action: #selector(setArrowStyleClassic), keyEquivalent: "")
         arrowClassicItem.target = self
         arrowMenu.addItem(arrowClassicItem)
         
-        arrowTriangleItem = NSMenuItem(title: "▲ ▼ Üçgen Ok", action: #selector(setArrowStyleTriangle), keyEquivalent: "")
+        arrowTriangleItem = NSMenuItem(title: "▲ ▼ Solid Triangles", action: #selector(setArrowStyleTriangle), keyEquivalent: "")
         arrowTriangleItem.target = self
         arrowMenu.addItem(arrowTriangleItem)
         
@@ -108,12 +108,12 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(arrowStyleSubmenuItem)
         
         // Reset totals
-        let resetItem = NSMenuItem(title: "🔄 İstatistikleri Sıfırla", action: #selector(resetTotalsClicked), keyEquivalent: "r")
+        let resetItem = NSMenuItem(title: "🔄 Reset Statistics", action: #selector(resetTotalsClicked), keyEquivalent: "r")
         resetItem.target = self
         menu.addItem(resetItem)
         
         // Launch at login
-        launchAtLoginItem = NSMenuItem(title: "🚀 Başlangıçta Otomatik Çalıştır", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        launchAtLoginItem = NSMenuItem(title: "🚀 Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
         launchAtLoginItem.target = self
         launchAtLoginItem.state = isLaunchAtLoginEnabled() ? .on : .off
         menu.addItem(launchAtLoginItem)
@@ -121,7 +121,7 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(NSMenuItem.separator())
         
         // Quit
-        let quitItem = NSMenuItem(title: "❌ Çıkış (Quit)", action: #selector(quitClicked), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "❌ Quit", action: #selector(quitClicked), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
     }
@@ -194,15 +194,15 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             attributes: [.font: boldFont, .foregroundColor: NSColor.labelColor]
         )
         
-        downloadDetailItem.title = String(format: "⬇️ İndirme Hızı: %.2f MB/s", lastStats.downloadSpeedMB)
-        uploadDetailItem.title = String(format: "⬆️ Yükleme Hızı: %.2f MB/s", lastStats.uploadSpeedMB)
+        downloadDetailItem.title = String(format: "⬇️ Download Speed: %.2f MB/s", lastStats.downloadSpeedMB)
+        uploadDetailItem.title = String(format: "⬆️ Upload Speed: %.2f MB/s", lastStats.uploadSpeedMB)
         
-        totalDownloadItem.title = "📥 Toplam İndirilen: \(formatTotalBytes(lastStats.totalDownloadBytes))"
-        totalUploadItem.title = "📤 Toplam Yüklenen: \(formatTotalBytes(lastStats.totalUploadBytes))"
+        totalDownloadItem.title = "📥 Total Downloaded: \(formatTotalBytes(lastStats.totalDownloadBytes))"
+        totalUploadItem.title = "📤 Total Uploaded: \(formatTotalBytes(lastStats.totalUploadBytes))"
         
         let ifaces = lastStats.activeInterfaces.joined(separator: ", ")
-        let ifaceText = ifaces.isEmpty ? "Bağlantı Yok" : ifaces
-        interfaceItem.title = "🌐 Aktif Ağ: \(ifaceText)"
+        let ifaceText = ifaces.isEmpty ? "No Connection" : ifaces
+        interfaceItem.title = "🌐 Active Interface: \(ifaceText)"
         
         launchAtLoginItem.state = isLaunchAtLoginEnabled() ? .on : .off
         arrowClassicItem.state = (arrowStyle == .standard) ? .on : .off

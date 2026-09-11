@@ -59,20 +59,20 @@ When clicked or right-clicked:
 ┌────────────────────────────────────────────────────────┐
 │ download=15mb, upload=0mb                              │
 ├────────────────────────────────────────────────────────┤
-│ ⬇️ İndirme Hızı: 15.42 MB/s                             │
-│ ⬆️ Yükleme Hızı: 0.21 MB/s                              │
+│ ⬇️ Download Speed: 15.42 MB/s                           │
+│ ⬆️ Upload Speed: 0.21 MB/s                             │
 ├────────────────────────────────────────────────────────┤
-│ 📥 Toplam İndirilen: 2.14 GB                           │
-│ 📤 Toplam Yüklenen: 142.8 MB                           │
+│ 📥 Total Downloaded: 2.14 GB                           │
+│ 📤 Total Uploaded: 142.8 MB                            │
 ├────────────────────────────────────────────────────────┤
-│ 🌐 Aktif Ağ: en0                                       │
+│ 🌐 Active Interface: en0                               │
 ├────────────────────────────────────────────────────────┤
-│ Ok Stili (Tray İkon) ▶  ✓ ↑ ↓ Klasik Ok                │
-│                          ▲ ▼ Üçgen Ok                  │
-│ 🔄 İstatistikleri Sıfırla                              │
-│ 🚀 Başlangıçta Otomatik Çalıştır                       │
+│ Arrow Style (Tray Icon) ▶  ✓ ↑ ↓ Classic Arrows        │
+│                              ▲ ▼ Solid Triangles       │
+│ 🔄 Reset Statistics                                    │
+│ 🚀 Launch at Login                                     │
 ├────────────────────────────────────────────────────────┤
-│ ❌ Çıkış (Quit)                                        │
+│ ❌ Quit                                                │
 └────────────────────────────────────────────────────────┘
 ```
 
