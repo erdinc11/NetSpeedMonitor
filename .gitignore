@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Build artifacts
+build/
+*.app
+*.dSYM/
+*.o
+
+# Swift Package Manager (if used)
+.build/
+.swiftpm/
+
+# User-specific Xcode files
+xcuserdata/
+DerivedData/
