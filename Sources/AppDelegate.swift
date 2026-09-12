@@ -4,29 +4,31 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var timer: Timer?
     private let networkMonitor = NetworkMonitor()
+    private let powerMonitor = PowerMonitor()
     private let menu = NSMenu()
     
-    // Dynamic menu items
+    // Dynamic network menu items
     private var headerItem: NSMenuItem!
     private var downloadDetailItem: NSMenuItem!
     private var uploadDetailItem: NSMenuItem!
     private var totalDownloadItem: NSMenuItem!
     private var totalUploadItem: NSMenuItem!
     private var interfaceItem: NSMenuItem!
+    
+    // Dynamic power menu items
+    private var powerHeaderItem: NSMenuItem!
+    private var powerDetailsItem: NSMenuItem!
+    private var powerSourceItem: NSMenuItem!
+    private var powerBatteryHealthItem: NSMenuItem!
+    
+    // Settings & Control items
+    private var settingsItem: NSMenuItem!
     private var launchAtLoginItem: NSMenuItem!
     
     private var lastStats = BandwidthStats()
-    private var arrowStyle: ArrowStyle = {
-        if let saved = UserDefaults.standard.string(forKey: "ArrowStyle"),
-           let style = ArrowStyle(rawValue: saved) {
-            return style
-        }
-        return .standard
-    }()
+    public private(set) var currentPowerStats = PowerStats()
     
-    private var arrowStyleSubmenuItem: NSMenuItem!
-    private var arrowClassicItem: NSMenuItem!
-    private var arrowTriangleItem: NSMenuItem!
+    private var settingsWindowController: SettingsWindowController?
     
     public func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -40,27 +42,38 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         setupMenu()
         updateStats()
         
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(settingsDidChange),
+            name: SettingsManager.didChangeNotification,
+            object: nil
+        )
+        
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             self?.updateStats()
         }
         RunLoop.main.add(timer!, forMode: .common)
     }
     
+    @objc private func settingsDidChange() {
+        updateStats()
+        updateMenuItems()
+    }
+    
     private func setupMenu() {
         menu.delegate = self
         menu.autoenablesItems = false
         
-        // 1. User specified header: "download=10mb, upload=5mb"
+        let boldFont = NSFont.boldSystemFont(ofSize: 13)
+        
+        // 1. Network Header
         headerItem = NSMenuItem(title: "download=0mb, upload=0mb", action: nil, keyEquivalent: "")
         headerItem.isEnabled = false
-        let boldFont = NSFont.boldSystemFont(ofSize: 13)
         headerItem.attributedTitle = NSAttributedString(
             string: "download=0mb, upload=0mb",
             attributes: [.font: boldFont, .foregroundColor: NSColor.labelColor]
         )
         menu.addItem(headerItem)
-        
-        menu.addItem(NSMenuItem.separator())
         
         // Detailed speeds
         downloadDetailItem = NSMenuItem(title: "⬇️ Download Speed: 0.00 MB/s", action: nil, keyEquivalent: "")
@@ -82,30 +95,40 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         totalUploadItem.isEnabled = false
         menu.addItem(totalUploadItem)
         
-        menu.addItem(NSMenuItem.separator())
-        
-        // Network interface information
+        // Interface
         interfaceItem = NSMenuItem(title: "🌐 Interface: Waiting...", action: nil, keyEquivalent: "")
         interfaceItem.isEnabled = false
         menu.addItem(interfaceItem)
         
         menu.addItem(NSMenuItem.separator())
         
-        // Arrow style selector
-        arrowStyleSubmenuItem = NSMenuItem(title: "Arrow Style (Tray Icon)", action: nil, keyEquivalent: "")
-        let arrowMenu = NSMenu()
-        arrowMenu.autoenablesItems = false
+        // 2. Power & Battery Section
+        powerHeaderItem = NSMenuItem(title: "⚡ Power Status", action: nil, keyEquivalent: "")
+        powerHeaderItem.isEnabled = false
+        powerHeaderItem.attributedTitle = NSAttributedString(
+            string: "⚡ Power Status",
+            attributes: [.font: boldFont, .foregroundColor: NSColor.labelColor]
+        )
+        menu.addItem(powerHeaderItem)
         
-        arrowClassicItem = NSMenuItem(title: "↑ ↓ Classic Arrows", action: #selector(setArrowStyleClassic), keyEquivalent: "")
-        arrowClassicItem.target = self
-        arrowMenu.addItem(arrowClassicItem)
+        powerDetailsItem = NSMenuItem(title: "⚡ System In: 0.0W | Load: 0.0W", action: nil, keyEquivalent: "")
+        powerDetailsItem.isEnabled = false
+        menu.addItem(powerDetailsItem)
         
-        arrowTriangleItem = NSMenuItem(title: "▲ ▼ Solid Triangles", action: #selector(setArrowStyleTriangle), keyEquivalent: "")
-        arrowTriangleItem.target = self
-        arrowMenu.addItem(arrowTriangleItem)
+        powerSourceItem = NSMenuItem(title: "🔌 Power Source: Checking...", action: nil, keyEquivalent: "")
+        powerSourceItem.isEnabled = false
+        menu.addItem(powerSourceItem)
         
-        arrowStyleSubmenuItem.submenu = arrowMenu
-        menu.addItem(arrowStyleSubmenuItem)
+        powerBatteryHealthItem = NSMenuItem(title: "🔋 Battery: 100% | 0.0°C", action: nil, keyEquivalent: "")
+        powerBatteryHealthItem.isEnabled = false
+        menu.addItem(powerBatteryHealthItem)
+        
+        menu.addItem(NSMenuItem.separator())
+        
+        // 3. Settings Window
+        settingsItem = NSMenuItem(title: "⚙️ Settings...", action: #selector(openSettingsClicked), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
         
         // Reset totals
         let resetItem = NSMenuItem(title: "🔄 Reset Statistics", action: #selector(resetTotalsClicked), keyEquivalent: "r")
@@ -113,7 +136,7 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(resetItem)
         
         // Launch at login
-        launchAtLoginItem = NSMenuItem(title: "🚀 Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        launchAtLoginItem = NSMenuItem(title: "🚀 Launch at Login", action: #selector(toggleLaunchAtLoginClicked), keyEquivalent: "")
         launchAtLoginItem.target = self
         launchAtLoginItem.state = isLaunchAtLoginEnabled() ? .on : .off
         menu.addItem(launchAtLoginItem)
@@ -143,16 +166,29 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     
     private func updateStats() {
-        let stats = networkMonitor.sample()
-        lastStats = stats
+        let netStats = networkMonitor.sample()
+        let powerStats = powerMonitor.sample()
         
-        // Render dynamic tray icon with up arrow for upload and down arrow for download
+        lastStats = netStats
+        currentPowerStats = powerStats
+        
+        let settings = SettingsManager.shared
+        
+        // Render dynamic tray icon with requested features
         let iconImage = StatusBarIconRenderer.renderImage(
-            uploadMB: stats.uploadSpeedMB,
-            downloadMB: stats.downloadSpeedMB,
-            arrowStyle: arrowStyle
+            uploadMB: netStats.uploadSpeedMB,
+            downloadMB: netStats.downloadSpeedMB,
+            powerStats: powerStats,
+            showNetworkSpeed: settings.showNetworkSpeed,
+            showPower: settings.showPower,
+            arrowStyle: settings.arrowStyle
         )
         statusItem.button?.image = iconImage
+        
+        // If settings window is currently visible, keep power preview fresh
+        if let win = settingsWindowController?.window, win.isVisible {
+            settingsWindowController?.updatePowerPreview(powerStats)
+        }
     }
     
     private func formatTotalBytes(_ bytes: UInt64) -> String {
@@ -183,12 +219,12 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     
     private func updateMenuItems() {
+        let boldFont = NSFont.boldSystemFont(ofSize: 13)
+        
+        // 1. Network items
         let downFormatted = formatHeaderSpeed(lastStats.downloadSpeedMB)
         let upFormatted = formatHeaderSpeed(lastStats.uploadSpeedMB)
-        
-        // Exact user requirement: "download=10mb, upload=5mb"
         let headerText = "download=\(downFormatted)mb, upload=\(upFormatted)mb"
-        let boldFont = NSFont.boldSystemFont(ofSize: 13)
         headerItem.attributedTitle = NSAttributedString(
             string: headerText,
             attributes: [.font: boldFont, .foregroundColor: NSColor.labelColor]
@@ -204,26 +240,64 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let ifaceText = ifaces.isEmpty ? "No Connection" : ifaces
         interfaceItem.title = "🌐 Active Interface: \(ifaceText)"
         
+        // 2. Power items
+        if currentPowerStats.hasBattery {
+            let pWatts = StatusBarIconRenderer.formatWatts(currentPowerStats.activeWatts)
+            let pHeader: String
+            if currentPowerStats.isCharging {
+                pHeader = "⚡ Charging: \(pWatts) (\(currentPowerStats.batteryLevel)%)"
+            } else if currentPowerStats.isPluggedIn {
+                pHeader = "🔌 AC Power: \(pWatts) (Fully Charged \(currentPowerStats.batteryLevel)%)"
+            } else {
+                pHeader = "🔋 Battery: \(pWatts) Consumed (\(currentPowerStats.batteryLevel)%)"
+            }
+            powerHeaderItem.attributedTitle = NSAttributedString(
+                string: pHeader,
+                attributes: [.font: boldFont, .foregroundColor: NSColor.labelColor]
+            )
+            
+            powerDetailsItem.title = String(
+                format: "⚡ System In: %.1fW | System Load: %.1fW",
+                currentPowerStats.systemInWatts,
+                currentPowerStats.systemLoadWatts
+            )
+            
+            let adapterStr = currentPowerStats.adapterWatts > 0 ? "\(currentPowerStats.adapterWatts)W Adapter" : "Connected"
+            powerSourceItem.title = currentPowerStats.isPluggedIn ?
+                "🔌 Power Source: \(adapterStr)" :
+                "🔋 Power Source: Battery"
+            
+            powerBatteryHealthItem.title = String(
+                format: "🔋 Level: %d%% | %.1f°C | %d Cycles",
+                currentPowerStats.batteryLevel,
+                currentPowerStats.temperature,
+                currentPowerStats.cycleCount
+            )
+        } else {
+            powerHeaderItem.attributedTitle = NSAttributedString(
+                string: "🔌 AC Power Only (Desktop Mac)",
+                attributes: [.font: boldFont, .foregroundColor: NSColor.labelColor]
+            )
+            powerDetailsItem.title = "⚡ System Load: N/A"
+            powerSourceItem.title = "🔌 Power Source: AC Adapter"
+            powerBatteryHealthItem.title = "🔋 Battery: Not Present"
+        }
+        
         launchAtLoginItem.state = isLaunchAtLoginEnabled() ? .on : .off
-        arrowClassicItem.state = (arrowStyle == .standard) ? .on : .off
-        arrowTriangleItem.state = (arrowStyle == .triangle) ? .on : .off
     }
     
-    @objc private func setArrowStyleClassic() {
-        arrowStyle = .standard
-        UserDefaults.standard.set(arrowStyle.rawValue, forKey: "ArrowStyle")
-        updateStats()
-        updateMenuItems()
-    }
-    
-    @objc private func setArrowStyleTriangle() {
-        arrowStyle = .triangle
-        UserDefaults.standard.set(arrowStyle.rawValue, forKey: "ArrowStyle")
-        updateStats()
-        updateMenuItems()
+    @objc public func openSettingsClicked() {
+        if settingsWindowController == nil {
+            settingsWindowController = SettingsWindowController(appDelegate: self)
+        }
+        settingsWindowController?.showSettings()
     }
     
     @objc private func resetTotalsClicked() {
+        resetTotals()
+    }
+    
+    public func resetTotals() {
         networkMonitor.resetTotals()
         updateStats()
         updateMenuItems()
@@ -236,20 +310,24 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: - Launch at Login (via LaunchAgent)
     private var launchAgentURL: URL {
         let home = FileManager.default.homeDirectoryForCurrentUser
-        return home.appendingPathComponent("Library/LaunchAgents/com.user.NetSpeedMonitor.plist")
+        return home.appendingPathComponent("Library/LaunchAgents/com.erdinc.MacTrayMonitor.plist")
     }
     
-    private func isLaunchAtLoginEnabled() -> Bool {
+    public func isLaunchAtLoginEnabled() -> Bool {
         return FileManager.default.fileExists(atPath: launchAgentURL.path)
     }
     
-    @objc private func toggleLaunchAtLogin() {
+    @objc private func toggleLaunchAtLoginClicked() {
+        toggleLaunchAtLogin()
+    }
+    
+    public func toggleLaunchAtLogin() {
         let fileManager = FileManager.default
         if isLaunchAtLoginEnabled() {
             try? fileManager.removeItem(at: launchAgentURL)
         } else {
             let appPath = Bundle.main.bundlePath
-            let execPath = Bundle.main.executablePath ?? "\(appPath)/Contents/MacOS/NetSpeedMonitor"
+            let execPath = Bundle.main.executablePath ?? "\(appPath)/Contents/MacOS/MacTrayMonitor"
             
             let plistContent = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -257,7 +335,7 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             <plist version="1.0">
             <dict>
                 <key>Label</key>
-                <string>com.user.NetSpeedMonitor</string>
+                <string>com.erdinc.MacTrayMonitor</string>
                 <key>ProgramArguments</key>
                 <array>
                     <string>\(execPath)</string>
@@ -274,5 +352,6 @@ public class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             try? plistContent.write(to: launchAgentURL, atomically: true, encoding: .utf8)
         }
         launchAtLoginItem.state = isLaunchAtLoginEnabled() ? .on : .off
+        settingsWindowController?.updateValues()
     }
 }

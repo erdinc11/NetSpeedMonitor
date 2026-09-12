@@ -43,7 +43,7 @@ func generateDMGBackground(outputPath: String) {
         .foregroundColor: NSColor(calibratedWhite: 0.12, alpha: 1.0),
         .paragraphStyle: paragraphStyle
     ]
-    let titleStr = NSAttributedString(string: "NetSpeedMonitor", attributes: titleAttrs)
+    let titleStr = NSAttributedString(string: "MacTrayMonitor", attributes: titleAttrs)
     titleStr.draw(in: CGRect(x: 0, y: 305, width: width, height: 45))
     
     NSGraphicsContext.restoreGraphicsState()
